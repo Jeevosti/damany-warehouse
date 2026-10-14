@@ -44,11 +44,11 @@ export function Login({auth, reconnect, passwordUpdated, cancelRecovery}: Props)
   }
 
   return <div className="login-shell">
-    <section className="login-story" aria-label="Solara solar company management">
+    <section className="login-story" aria-label="Damany warehouse management">
       <Brand/>
-      <div className="login-story-copy"><span className="login-kicker"><i/> SOLAR COMPANY MANAGEMENT</span><h1>Your solar business.<br/><span>All in one place.</span></h1><p>From the first installation to the next service call. Bring your clients, stock, and warranties together.</p></div>
+      <div className="login-story-copy"><span className="login-kicker"><i/> DAMANY WAREHOUSE MANAGEMENT</span><h1>Your solar business.<br/><span>All in one place.</span></h1><p>From the first installation to the next service call. Bring your clients, stock, and warranties together.</p></div>
       <div className="login-solar-art" aria-hidden="true"><div className="login-orbit orbit-one"/><div className="login-orbit orbit-two"/><div className="login-sun"><Sun size={40} strokeWidth={1.3}/></div><div className="login-panel-grid">{Array.from({length:12}, (_, index) => <span key={index}/>)}</div><div className="login-energy-line"/></div>
-      <div className="login-story-footer"><span><ShieldCheck size={17}/>Your business, connected.</span><span>POWERED BY GOOD ENERGY</span></div>
+      <div className="login-story-footer"><span><ShieldCheck size={17}/>Your business, connected.</span><span>POWERED BY GREEN ENERGY</span></div>
     </section>
     <main className="login-main">
       <div className="login-mobile-brand"><Brand/></div>
@@ -70,7 +70,7 @@ export function Login({auth, reconnect, passwordUpdated, cancelRecovery}: Props)
         <div className="login-account-help"><ShieldCheck size={18}/><p>Need an account? <strong>Ask your company administrator.</strong><br/>Use the email and password created for this application.</p></div>
         {!recovery && <div className="login-connection"><button className="login-connection-toggle" type="button" aria-expanded={settings} onClick={() => setSettings(value => !value)}><Settings2 size={14}/>Connection settings</button>{settings && <form className="login-connection-form" onSubmit={event => {event.preventDefault();setError('');try {saveConnection({url:url.trim().replace(/\/$/, ''), key:key.trim()});setSettings(false);setKey('');setMessage('Connection saved. Sign in with an account from this project.');reconnect();} catch (err) {setError(authMessage(err));}}}><p>Administrator setup for this browser. Enter the project URL and public key supplied for your deployment.</p><Field label="Supabase project URL"><Input type="url" required value={url} onChange={e => setUrl(e.target.value)} placeholder="https://your-project.supabase.co"/></Field><Field label="Publishable key" hint="Use a publishable or legacy anon key. Never use a secret or service-role key."><Input required type="password" autoComplete="off" value={key} onChange={e => setKey(e.target.value)} placeholder="sb_publishable_…"/></Field><Button type="submit" variant="secondary" disabled={pending}>Save connection</Button></form>}</div>}
       </div>
-      <footer className="login-footer"><span>© {new Date().getFullYear()} Solara</span><span>Solar operations, simplified.</span></footer>
+      <footer className="login-footer"><span>© {new Date().getFullYear()} Damany</span><span>Solar operations, simplified.</span></footer>
     </main>
   </div>;
 }
