@@ -6,7 +6,15 @@ import type {InstallationStatus} from '../lib/types';
 import type {Asset} from '../lib/selectors';
 export function Button({children,variant='primary',className='',...props}:ButtonHTMLAttributes<HTMLButtonElement>&{variant?:'primary'|'secondary'|'ghost'|'danger'}){return <button className={`btn btn-${variant} ${className}`} {...props}>{children}</button>;}
 export function IconButton({label,children,className='',...props}:ButtonHTMLAttributes<HTMLButtonElement>&{label:string}){return <button className={`icon-button ${className}`} aria-label={label} title={label} {...props}>{children}</button>;}
-export function Brand({small=false}:{small?:boolean}){return <div className={`brand ${small?'small':''}`}><span className="brand-mark"><Sun size={25} strokeWidth={1.7}/></span><span>DAMANY<span className="brand-dot">.</span><small>WAREHOUSE OPERATIONS</small></span></div>;}
+export function Brand({small=false}:{small?:boolean}){return <div className={`brand ${small?'small':''}`}><span className="brand-mark">
+  <img
+    src="/damany-logo.png"
+    alt="Damany logo"
+    width={36}
+    height={36}
+    style={{ objectFit: 'contain' }}
+  />
+</span><span>DAMANY<span className="brand-dot">.</span><small>WAREHOUSE OPERATIONS</small></span></div>;}
 export function Badge({tone='neutral',children,dot=false}:{tone?:string;children:ReactNode;dot?:boolean}){return <span className={`badge badge-${tone}`}>{dot&&<i/>}{children}</span>;}
 export function StatusBadge({status}:{status:InstallationStatus}){return <Badge dot tone={status==='Active'?'green':status==='Pending Maintenance'?'amber':status==='Commissioning'?'blue':'neutral'}>{status==='Pending Maintenance'?'Maintenance':status}</Badge>;}
 export function WarrantyBadge({asset}:{asset:Asset}){return <Badge tone={asset.warranty.tone}><ShieldCheck size={12}/>{asset.warranty.label}</Badge>;}
