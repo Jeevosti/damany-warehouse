@@ -13,5 +13,5 @@ export interface ComponentInput {inventory_item_id:string;serial_number:string|n
 export type InstallationInput = Omit<Installation, 'id'|'created_at'|'client_id'>;
 export interface SiteInput { client_id?: string; client?: ClientInput; installation: InstallationInput; components: ComponentInput[] }
 export type ItemInput = Omit<InventoryItem, 'id'|'total_stock'>;
-export type View = 'overview' | 'clients' | 'installations' | 'inventory' | 'warranties' | 'notifications' | 'settings';
+export type View = 'overview' | 'clients' | 'installations' | 'inventory' | 'warranties' | 'notifications' | 'settings' | 'invoices';
 export interface RmaInput {component_id:string;reason:string;replacement?:ComponentInput}
