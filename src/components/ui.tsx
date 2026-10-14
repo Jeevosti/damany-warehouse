@@ -10,8 +10,8 @@ export function Brand({small=false}:{small?:boolean}){return <div className={`br
   <img
     src="/damany-logo.png"
     alt="Damany logo"
-    width={36}
-    height={36}
+    width={46}
+    height={46}
     style={{ objectFit: 'contain' }}
   />
 </span><span>DAMANY<span className="brand-dot">.</span><small>WAREHOUSE OPERATIONS</small></span></div>;}
