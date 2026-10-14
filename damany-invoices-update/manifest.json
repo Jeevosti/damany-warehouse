@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": "src/lib/creditInvoices.ts",
+      "sha256": "cbd8fde639e73d2417c61881fa252beb190eeb03012692fe87957419dd52000f"
+    },
+    {
+      "path": "src/services/creditInvoices.ts",
+      "sha256": "3a49ac954141bf0ac4deb72658eda8681eb556cff755c649c14a10e97aa59242"
+    },
+    {
+      "path": "src/pages/Invoices.tsx",
+      "sha256": "827a03650d416ae24830e2532df0db120faeee07edc234c786965d92fbf282a5"
+    },
+    {
+      "path": "src/credit-invoices.css",
+      "sha256": "152850dfdb61feadb77fcc49c7c92662390d91177d2b6343c3b8af268ae611e6"
+    },
+    {
+      "path": "supabase/migrations/202610140001_credit_invoices.sql",
+      "sha256": "88a1dbf04eeb490b2c4655f589e5a05c954159b5cda7189ed520bb98be03490c"
+    },
+    {
+      "path": "tests/credit-invoices.test.ts",
+      "sha256": "4d4ab0526c87c4aeb6fc98f3aff9bab0466a24dc3bb6ed9dae5e351b05f674eb"
+    },
+    {
+      "path": "tests/credit-invoices-database.mjs",
+      "sha256": "530aefac95c5bcb9b987b5377478ec153315d851a67e45357da0bad86edb5f03"
+    },
+    {
+      "path": "docs/CREDIT-INVOICES-SETUP.md",
+      "sha256": "806b0ccabfd8c4d344628e69bbfa265a320d77f26e400a8c91cc0ecf11cc4e9d"
+    }
+  ]
+}
