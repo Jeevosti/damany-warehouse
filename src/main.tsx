@@ -1,4 +1,5 @@
 import {StrictMode,Component} from 'react';
+import './damany-addons';
 import type {ReactNode,ErrorInfo} from 'react';
 import {createRoot} from 'react-dom/client';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
