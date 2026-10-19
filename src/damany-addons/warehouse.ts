@@ -43,7 +43,7 @@ export function warehouseCSV(rows: Record<string, string | number>[]) {
 }
 export function warehouseError(error: unknown) {
   const e = error as {code?: string; message?: string};
-  if (['PGRST202', 'PGRST205', '42P01', '42883'].includes(e?.code || '')) return 'Run the warehouse_operations_roles SQL file from the add-on in your current Supabase project, then refresh.';
+  if (['PGRST202', 'PGRST205', '42P01', '42883'].includes(e?.code || '')) return `${e.message || 'A required database table or function could not be found.'} [${e.code}]`;
   if (e?.code === '23505') return 'This SKU, serial or location is already registered. Check the code and existing records.';
   return e?.message || 'The warehouse action could not be completed.';
 }

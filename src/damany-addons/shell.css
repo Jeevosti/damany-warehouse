@@ -1,0 +1,28 @@
+/* Main-navigation integration; scoped so existing branding and page styles stay intact. */
+.damany-shell .sidebar{height:100dvh;overflow:hidden}
+.damany-shell .sidebar>.brand,.damany-shell .sidebar>.nav-label{flex-shrink:0}
+.damany-shell .sidebar>.nav-label{margin-top:28px}
+.damany-shell .damany-navigation{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-bottom:10px}
+.damany-shell .damany-navigation .nav-item{min-height:44px}
+.damany-shell .sidebar-bottom{flex-shrink:0;margin-top:0;padding-top:12px}
+.damany-shell .sidebar-profile{padding:16px 0;margin-top:8px}
+.damany-shell .sidebar-profile>div{min-width:0}
+.damany-shell .sidebar-profile small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:148px}
+.damany-shell .profile-avatar{flex-shrink:0}
+.damany-shell .topbar{position:sticky;top:0;z-index:20}
+.damany-shell .topbar-actions{flex-shrink:0}
+.damany-shell .top-avatar{display:flex;flex-shrink:0;cursor:pointer}
+.damany-shell .top-avatar:focus-visible,.damany-shell .damany-theme-toggle:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.damany-shell .damany-theme-toggle[aria-pressed=true]{color:var(--green);background:var(--green-soft)}
+.damany-shell #main-content>.dw-notice{margin-bottom:20px}
+.damany-access-screen{max-width:660px;margin:8vh auto;padding:24px;color:var(--text)}
+.damany-access-screen>.brand{margin-bottom:28px}
+.damany-access-screen>.panel{padding:28px}
+.damany-access-screen h1{font-size:24px;margin:0 0 20px}
+.damany-access-screen p{line-height:1.6;color:var(--muted)}
+.damany-access-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+.damany-account-details{display:grid;gap:20px;margin:24px 0}
+.damany-account-details dt{font-size:12px;color:var(--muted);margin-bottom:6px}
+.damany-account-details dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+@media(max-width:760px){.damany-shell .topbar{padding:0 12px;gap:8px}.damany-shell .topbar-actions{gap:5px}.damany-shell .breadcrumb{min-width:0;gap:6px}.damany-shell .breadcrumb>span,.damany-shell .breadcrumb>svg{display:none}.damany-shell .breadcrumb strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.damany-shell .sidebar>.nav-label{margin-top:22px}}
+@media(max-height:520px){.damany-shell .sidebar{padding-top:16px}.damany-shell .sidebar>.nav-label{margin-top:14px}.damany-shell .sidebar-profile{display:none}.damany-shell .sidebar-bottom{padding-top:6px}}
