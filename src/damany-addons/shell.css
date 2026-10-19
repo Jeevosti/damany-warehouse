@@ -15,6 +15,10 @@
 .damany-shell .top-avatar:focus-visible,.damany-shell .damany-theme-toggle:focus-visible{outline:2px solid var(--green);outline-offset:3px}
 .damany-shell .damany-theme-toggle[aria-pressed=true]{color:var(--green);background:var(--green-soft)}
 .damany-shell #main-content>.dw-notice{margin-bottom:20px}
+.dw-inventory-heading{flex-wrap:wrap;align-items:center}
+.dw-movement-form{display:grid;gap:18px}
+.dw-scanner-result{font-size:12px;font-weight:600;color:var(--green)}
+.dw-stock-impact{display:grid;gap:8px;padding:14px;background:var(--surface-alt);border-radius:8px;font-size:13px}
 .damany-access-screen{max-width:660px;margin:8vh auto;padding:24px;color:var(--text)}
 .damany-access-screen>.brand{margin-bottom:28px}
 .damany-access-screen>.panel{padding:28px}

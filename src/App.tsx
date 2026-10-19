@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import type {Session} from '@supabase/supabase-js';
-import {BarChart3, Bell, Calculator, CheckCircle2, ChevronRight, LayoutDashboard, LogOut, Menu, Package, ReceiptText, RefreshCw, Search, Settings as SettingsIcon, ShieldCheck, Sun, Truck, Users, X} from 'lucide-react';
+import {BarChart3, Bell, Calculator, CheckCircle2, ChevronRight, LayoutDashboard, LogOut, Menu, Package, ReceiptText, RefreshCw, Search, Settings as SettingsIcon, ShieldCheck, Sun, Users, X} from 'lucide-react';
 import type {Snapshot, View} from './lib/types';
 import {metrics} from './lib/selectors';
 import {notifications} from './lib/notifications';
@@ -22,7 +22,7 @@ import {warehouseApi} from './damany-addons/warehouseApi';
 import {warehouseError} from './damany-addons/warehouse';
 import type {WarehouseAccess, WarehouseSnapshot} from './damany-addons/warehouse';
 
-type WorkspaceView = View | 'warehouse' | 'quotations' | 'reports';
+type WorkspaceView = View | 'quotations' | 'reports';
 const nav = [
   {id: 'overview', label: 'Overview', Icon: LayoutDashboard},
   {id: 'clients', label: 'Clients', Icon: Users},
@@ -30,7 +30,6 @@ const nav = [
   {id: 'quotations', label: 'Quotations', Icon: Calculator},
   {id: 'installations', label: 'Installations', Icon: Sun},
   {id: 'inventory', label: 'Inventory', Icon: Package},
-  {id: 'warehouse', label: 'Warehouse', Icon: Truck},
   {id: 'reports', label: 'Reports', Icon: BarChart3},
   {id: 'warranties', label: 'Warranty tracker', Icon: ShieldCheck},
   {id: 'notifications', label: 'Notifications', Icon: Bell},
@@ -65,7 +64,7 @@ function WorkspaceApp({session, access, signOut}: {session: Session; access: War
   const [theme, setTheme] = useState(() => {try {return localStorage.getItem('solara-theme') || 'system';} catch {return 'system';}});
   const [dark, setDark] = useState(false);
   const workspace = useQuery({queryKey: ['workspace', mode, session.user.id, access.owner_id, access.role], queryFn: warehouseApi.workspace, refetchInterval: 60000, refetchOnWindowFocus: true});
-  const needsLocations = view === 'warehouse' || view === 'reports';
+  const needsLocations = view === 'inventory' || view === 'reports';
   const locations = useQuery({queryKey: ['damany-locations', access.owner_id], queryFn: warehouseApi.locations, enabled: needsLocations});
   const warehouseData: WarehouseSnapshot = workspace.data || {...emptyData, inventory_units: []};
   const data = warehouseData as Snapshot, m = metrics(data), notices = notifications(data);
@@ -91,7 +90,7 @@ function WorkspaceApp({session, access, signOut}: {session: Session; access: War
   const props = {data, query, setQuery, open, navigate, filter, setFilter};
   const formProps = {mode, onClose: () => setModal(null), onSuccess: (message: string) => {setModal(null); setToast(message);}};
   const title = view === 'settings' ? 'Settings' : nav.find(item => item.id === view)?.label;
-  const searchVisible = !['warehouse', 'reports', 'settings'].includes(view);
+  const searchVisible = !['reports', 'settings'].includes(view);
 
   return <div className="app-shell damany-shell">
     {mobile && <button className="mobile-overlay" aria-label="Close navigation" onClick={() => setMobile(false)}/>}
@@ -124,8 +123,7 @@ function WorkspaceApp({session, access, signOut}: {session: Session; access: War
           view === 'installations' ? <Installations {...props}/> :
           view === 'invoices' ? <Invoices {...props} mode={mode} userId={session.user.id}/> :
           view === 'quotations' ? <Quotations {...props} mode={mode} userId={session.user.id} canEdit={canEdit}/> :
-          view === 'inventory' ? <Inventory {...props}/> :
-          view === 'warehouse' ? <Warehouse data={warehouseData} locations={locations.data || []} canEdit={canEdit} refresh={refreshWarehouse} dirty={() => setToast('Warehouse records updated.')}/> :
+          view === 'inventory' ? <Inventory {...props} canEdit={canEdit} operations={<Warehouse embedded search={query} setSearch={setQuery} data={warehouseData} locations={locations.data || []} canEdit={canEdit} refresh={refreshWarehouse} dirty={() => setToast('Stock movement saved.')}/>}/> :
           view === 'reports' ? <Reports locations={locations.data || []} ownerId={access.owner_id}/> :
           view === 'notifications' ? <Notifications {...props} mode={mode}/> : <Warranties {...props}/>}
       </main>
