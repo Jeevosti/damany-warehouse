@@ -19,6 +19,15 @@
 .dw-movement-form{display:grid;gap:18px}
 .dw-scanner-result{font-size:12px;font-weight:600;color:var(--green)}
 .dw-stock-impact{display:grid;gap:8px;padding:14px;background:var(--surface-alt);border-radius:8px;font-size:13px}
+.dw-inventory-page .page-heading{flex-wrap:wrap}
+.dw-inventory-page .page-actions{display:flex;flex-wrap:wrap;gap:8px;max-width:100%;flex-shrink:1}
+.dw-inventory-page .page-actions .btn{display:inline-flex;white-space:nowrap}
+.dw-location-details{margin-top:22px}
+.dw-location-details>summary{cursor:pointer;padding:18px 22px;font-size:13px;font-weight:600}
+.dw-location-details[open]>summary{border-bottom:1px solid var(--line)}
+.dw-location-details>.dw-panel{margin-bottom:0}
+.dw-dialog-panel{margin-bottom:0}
+.dw-inventory-page>.dw-notice{margin-top:16px}
 .damany-access-screen{max-width:660px;margin:8vh auto;padding:24px;color:var(--text)}
 .damany-access-screen>.brand{margin-bottom:28px}
 .damany-access-screen>.panel{padding:28px}

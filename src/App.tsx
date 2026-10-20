@@ -123,7 +123,7 @@ function WorkspaceApp({session, access, signOut}: {session: Session; access: War
           view === 'installations' ? <Installations {...props}/> :
           view === 'invoices' ? <Invoices {...props} mode={mode} userId={session.user.id}/> :
           view === 'quotations' ? <Quotations {...props} mode={mode} userId={session.user.id} canEdit={canEdit}/> :
-          view === 'inventory' ? <Inventory {...props} canEdit={canEdit} operations={<Warehouse embedded search={query} setSearch={setQuery} data={warehouseData} locations={locations.data || []} canEdit={canEdit} refresh={refreshWarehouse} dirty={() => setToast('Stock movement saved.')}/>}/> :
+          view === 'inventory' ? <Warehouse search={query} setSearch={setQuery} data={warehouseData} locations={locations.data || []} canEdit={canEdit} refresh={refreshWarehouse} dirty={() => setToast('Stock movement saved.')}>{actions => <Inventory {...props} canEdit={canEdit} actions={actions}/>}</Warehouse> :
           view === 'reports' ? <Reports locations={locations.data || []} ownerId={access.owner_id}/> :
           view === 'notifications' ? <Notifications {...props} mode={mode}/> : <Warranties {...props}/>}
       </main>
