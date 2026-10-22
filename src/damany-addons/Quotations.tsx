@@ -1,13 +1,16 @@
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {BatteryCharging, Calculator, Copy, FileText, Plus, Printer, RefreshCw, Save, Sun, Trash2, Zap} from 'lucide-react';
+import {BatteryCharging, Calculator, Copy, Download, FileText, Plus, Printer, RefreshCw, Save, Sun, Trash2, Zap} from 'lucide-react';
 import {Badge, Button, Empty, Field, FormError, IconButton, Input, Loading, Modal, PageHead, SearchBox, Select, Textarea} from '../components/ui';
 import type {PageProps} from '../pages/Overview';
 import type {InventoryItem} from '../lib/types';
 import type {QuoteContact, QuoteDraft, QuoteEquipment, QuoteLine, QuoteSizing, QuoteStatus, QuoteTotals, SavedQuotation} from './solarQuotation';
-import {newQuoteDraft, newQuoteLoad, prepareQuotation, quoteDateAfter, quoteCents, quoteEquipmentIssues, quoteError, quoteLineTotal, quoteMoney, quotePercent, quotationLines, quotationNumber, quotationTotals, sizeQuotation} from './solarQuotation';
+import {newQuoteLoad, prepareQuotation, quoteDateAfter, quoteCents, quoteEquipmentIssues, quoteError, quoteLineTotal, quoteMoney, quotePercent, quotationLines, quotationNumber, quotationTotals, sizeQuotation} from './solarQuotation';
+import {newSimpleQuotation} from './simpleQuotation';
+import {SimpleQuoteBuilder} from './SimpleQuoteBuilder';
 import {quotationApi} from './quotationApi';
+import {downloadQuotationPdf} from './quotationPdf';
 import {formatDate, today} from '../lib/warranty';
 import './quotations.css';
 
@@ -30,8 +33,8 @@ function loadDraft(key: string): {id: string; draft: QuoteDraft; notice: string}
   try {
     const raw = localStorage.getItem(key);
     if (raw) {const stored = JSON.parse(raw); if (stored.draft?.version === 1 && stored.draft.issuer && stored.draft.customer && stored.draft.assumptions && stored.draft.equipment && Array.isArray(stored.draft.demand?.loads) && Array.isArray(stored.draft.extras) && typeof stored.id === 'string') return {...stored, notice: 'Your unfinished quotation was restored from this browser.'}; throw new Error();}
-  } catch {return {id: crypto.randomUUID(), draft: newQuoteDraft(), notice: 'The browser draft could not be restored. Saved quotations are available in the Saved tab.'};}
-  return {id: crypto.randomUUID(), draft: newQuoteDraft(), notice: ''};
+  } catch {return {id: crypto.randomUUID(), draft: newSimpleQuotation(), notice: 'The browser draft could not be restored. Saved quotations are available in the Saved tab.'};}
+  return {id: crypto.randomUUID(), draft: newSimpleQuotation(), notice: ''};
 }
 function calculate(draft: QuoteDraft): {sizing?: QuoteSizing; lines?: QuoteLine[]; totals?: QuoteTotals; message: string} {
   let sizing: QuoteSizing | undefined, lines: QuoteLine[] | undefined;
@@ -47,6 +50,7 @@ export function Quotations({data, mode, userId, query, setQuery, canEdit = true}
   const [selected, setSelected] = useState<{quote: SavedQuotation; saved: boolean} | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(initial.notice), [storageNotice, setStorageNotice] = useState('');
   const [resetConfirm, setResetConfirm] = useState(false), [page, setPage] = useState(0);
+  const [editor, setEditor] = useState<'simple' | 'detailed'>('simple'), [builderVersion, setBuilderVersion] = useState(0);
   const api = quotationApi(mode, userId), cache = useQueryClient(), queryKey = ['installation-quotations', mode, userId];
   const records = useQuery({queryKey, queryFn: () => api.load(), enabled: !!userId, retry: 1});
   const c = calculate(draft), a = draft.assumptions, e = draft.equipment;
@@ -58,21 +62,24 @@ export function Quotations({data, mode, userId, query, setQuery, canEdit = true}
   function storeRow(row: SavedQuotation) {cache.setQueryData<SavedQuotation[]>(queryKey, previous => [row, ...(previous || []).filter(item => item.id !== row.id)]);}
   function preview() {try {const document = prepareQuotation(draft); setError(''); setSelected({saved: false, quote: {id: requestId, quote_number: quotationNumber(requestId), status: 'Prepared', document, total_cents: quotationTotals(document.lines, document.discount_cents, document.tax_bps, document.deposit_bps).total_cents, created_at: ''}});} catch (value) {setError(quoteError(value));}}
   async function save() {if (!canEdit) return; setBusy(true); setError(''); try {const row = await api.save(requestId, draft); storeRow(row); setSelected({quote: row, saved: true}); setNotice(mode === 'demo' ? 'Demo quotation saved in this browser.' : 'Quotation saved to your account.');} catch (value) {setError(quoteError(value));} finally {setBusy(false);}}
+  async function downloadPdf() {if (!selected) return; setBusy(true); setError(''); try {await downloadQuotationPdf(selected.quote, mode === 'demo', selected.saved);} catch (value) {setError(quoteError(value));} finally {setBusy(false);}}
   async function changeStatus(status: QuoteStatus) {if (!canEdit || !selected?.saved) return; setBusy(true); setError(''); try {await api.setStatus(selected.quote.id, status); const row = {...selected.quote, status}; storeRow(row); setSelected({quote: row, saved: true});} catch (value) {setError(quoteError(value));} finally {setBusy(false);}}
-  function duplicate(row: SavedQuotation) {edit({...structuredClone(row.document.draft), issued_on: today(), valid_until: quoteDateAfter(today())}); setSelected(null); setTab('create'); setNotice(`Copied ${row.quote_number}. Changes will be saved under a new quotation number.`); window.scrollTo({top: 0, behavior: 'smooth'});}
-  function fresh() {edit(newQuoteDraft()); setNotice('New quotation started.'); setResetConfirm(false);}
+  function duplicate(row: SavedQuotation) {edit({...structuredClone(row.document.draft), issued_on: today(), valid_until: quoteDateAfter(today())}); setSelected(null); setTab('create'); setEditor(row.document.draft.brief ? 'simple' : 'detailed'); setBuilderVersion(value => value + 1); setNotice(`Copied ${row.quote_number}. Changes will be saved under a new quotation number.`); window.scrollTo({top: 0, behavior: 'smooth'});}
+  function fresh() {edit(newSimpleQuotation()); setEditor('simple'); setBuilderVersion(value => value + 1); setNotice('New quotation started.'); setResetConfirm(false);}
   function copyProduct(kind: 'panel' | 'inverter' | 'battery', item: InventoryItem) {edit({...draft, equipment: {...e, [`${kind}_name`]: `${item.brand} ${item.model}`.trim() || item.item_type, [`${kind}_price`]: Number(item.unit_price).toFixed(2)}});}
   const search = query.trim().toLocaleLowerCase();
   const filtered = (records.data || []).filter(row => (filter === 'all' || row.status === filter) && [row.quote_number, row.document.draft.customer.name, row.document.draft.project_title, row.document.draft.customer.phone].some(value => value.toLocaleLowerCase().includes(search)));
   const currentPage = Math.min(page, Math.max(0, Math.ceil(filtered.length / 20) - 1));
 
   return <div className="quotation-page">
-    <PageHead eyebrow="PROJECT PLANNING" title="Installation quotations" description="Turn a customer's power needs into a clear, itemized project estimate."><Button variant="secondary" disabled={!canEdit} onClick={() => {setTab('create'); setResetConfirm(true);}}><Plus size={16}/>New quotation</Button></PageHead>
+    <PageHead eyebrow="PROJECT PLANNING" title="Quotations" description="Simple solar estimates, ready to share with your customers."><Button variant="secondary" disabled={!canEdit} onClick={() => {setTab('create'); setResetConfirm(true);}}><Plus size={16}/>New quotation</Button></PageHead>
     <div className="q-tabs" role="tablist" aria-label="Quotation workspace"><button disabled={!canEdit} role="tab" aria-selected={tab === 'create'} onClick={() => setTab('create')}><Calculator size={17}/>Create quotation</button><button role="tab" aria-selected={tab === 'saved'} onClick={() => setTab('saved')}><FileText size={17}/>Saved quotations {records.data ? `(${records.data.length})` : ''}</button></div>
     {mode === 'demo' && <div className="q-notice">Demo quotations are sample records saved only in this browser. Use Live workspace for customer records.</div>}
     {notice && <div className="q-notice" role="status">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss notice">×</button></div>}
     {storageNotice && <FormError message={storageNotice}/>}
-    <div hidden={!canEdit || tab !== 'create'}>
+    <div hidden={!canEdit || tab !== 'create' || editor !== 'simple'}><SimpleQuoteBuilder key={builderVersion} draft={draft} data={data} edit={edit} busy={busy} error={error} onSave={() => void save()} onPreview={preview} onDetailed={() => setEditor('detailed')}/></div>
+    <div hidden={!canEdit || tab !== 'create' || editor !== 'detailed'}>
+      <div className="q-editor-mode"><span>Detailed editor</span><Button variant="secondary" onClick={() => setEditor('simple')}>Back to simple builder</Button></div>
       <form onSubmit={event => {event.preventDefault(); void save();}}>
         <fieldset disabled={busy} className="q-fieldset">
           <div className="q-editor">
@@ -140,7 +147,7 @@ export function Quotations({data, mode, userId, query, setQuery, canEdit = true}
     </div>}
 
     {resetConfirm && <Modal title="Start a new quotation?" subtitle="Your current browser draft will be replaced. Saved quotations remain available." onClose={() => setResetConfirm(false)}><div className="q-modal-actions"><Button variant="secondary" onClick={() => setResetConfirm(false)}>Keep editing</Button><Button onClick={fresh}>Start new quotation</Button></div></Modal>}
-    {selected && <><Modal wide title={selected.quote.quote_number} subtitle={selected.saved ? 'Saved quotation · duplicate it to change prices or equipment.' : 'Draft preview · save to keep this quotation in your account.'} onClose={() => {if (!busy) {setSelected(null); setError('');}}}><div className="q-document-actions"><Button onClick={() => window.print()}><Printer size={16}/>Print / Save PDF</Button><Button variant="secondary" disabled={busy || !canEdit} onClick={() => duplicate(selected.quote)}><Copy size={16}/>Duplicate & edit</Button>{selected.saved && canEdit && <Field label="Tracking status"><Select disabled={busy} value={selected.quote.status} onChange={event => changeStatus(event.target.value as QuoteStatus)}>{statuses.map(status => <option key={status}>{status}</option>)}</Select></Field>}</div>{selected.saved && <p className="q-help">Status changes are for your records; they do not send a message to the customer.</p>}<FormError message={error}/><QuotationDocument quotation={selected.quote} demo={mode === 'demo'} saved={selected.saved}/></Modal>{createPortal(<div className="q-print-copy"><QuotationDocument quotation={selected.quote} demo={mode === 'demo'} saved={selected.saved}/></div>, document.body)}</>}
+    {selected && <><Modal wide title={selected.quote.quote_number} subtitle={selected.saved ? 'Saved quotation · duplicate it to change prices or equipment.' : 'Draft preview · save to keep this quotation in your account.'} onClose={() => {if (!busy) {setSelected(null); setError('');}}}><div className="q-document-actions"><Button disabled={busy} onClick={() => void downloadPdf()}><Download size={16}/>{busy ? 'Please wait…' : 'Download PDF'}</Button><Button variant="secondary" disabled={busy} onClick={() => window.print()}><Printer size={16}/>Print</Button><Button variant="secondary" disabled={busy || !canEdit} onClick={() => duplicate(selected.quote)}><Copy size={16}/>Duplicate & edit</Button>{selected.saved && canEdit && <Field label="Tracking status"><Select disabled={busy} value={selected.quote.status} onChange={event => changeStatus(event.target.value as QuoteStatus)}>{statuses.map(status => <option key={status}>{status}</option>)}</Select></Field>}</div>{selected.saved && <p className="q-help">Status changes are for your records; they do not send a message to the customer.</p>}<FormError message={error}/><QuotationDocument quotation={selected.quote} demo={mode === 'demo'} saved={selected.saved}/></Modal>{createPortal(<div className="q-print-copy"><QuotationDocument quotation={selected.quote} demo={mode === 'demo'} saved={selected.saved}/></div>, document.body)}</>}
   </div>;
 }
 
@@ -151,6 +158,7 @@ export function QuotationDocument({quotation, demo, saved = true}: {quotation: S
     <header><div><div className="q-document-brand">{d.issuer.name}</div><div className="q-contact">{[d.issuer.phone, d.issuer.email, d.issuer.address].filter(Boolean).join('\n')}</div></div><div className="q-document-heading"><h1>QUOTATION</h1><strong>{quotation.quote_number}</strong><span>{formatDate(d.issued_on)}</span></div></header>
     {demo && <p className="q-document-banner">DEMO — SAMPLE QUOTATION</p>}{!saved && <p className="q-document-banner">DRAFT — NOT SAVED</p>}
     <div className="q-document-customer"><div><h2>PREPARED FOR</h2><strong>{d.customer.name}</strong><div className="q-contact">{[d.customer.phone, d.customer.email, d.customer.address].filter(Boolean).join('\n')}</div></div><div><h2>PROJECT</h2><strong>{d.project_title}</strong><p>Valid until {formatDate(d.valid_until)}</p></div></div>
+    {d.brief?.scenario && <section className="q-site-brief"><h2>SITE & REQUIREMENTS</h2><p>{[d.brief.scenario, d.brief.site_type, d.brief.scenario === 'Home' && d.brief.rooms ? `${d.brief.rooms} rooms` : '', d.brief.location].filter(Boolean).join(' · ')}</p><p>{[d.brief.goal, d.brief.grid, d.brief.timeline].filter(Boolean).join(' · ')}</p>{d.brief.site_notes && <p>{d.brief.site_notes}</p>}</section>}
     <div className="q-document-system"><div><span>Customer demand</span><strong>{decimal(s.peak_kw)} kW peak</strong><small>{decimal(s.daily_kwh)} kWh/day</small></div><div><span>Quoted solar array</span><strong>{decimal((e.panel_count ?? s.suggested_panels) * e.panel_watts / 1000)} kWp</strong><small>{e.panel_count ?? s.suggested_panels} × {e.panel_watts} W panels</small></div><div><span>Quoted inverter</span><strong>{decimal(e.inverter_kw)} kW</strong><small>Continuous output</small></div><div><span>Quoted battery</span><strong>{decimal((s.suggested_batteries ? e.battery_count ?? s.suggested_batteries : 0) * e.battery_kwh)} kWh</strong><small>{decimal(s.backup_kwh)} kWh backup demand</small></div></div>
     <table><thead><tr><th>Description</th><th>Qty</th><th>Unit price (KES)</th><th>Amount (KES)</th></tr></thead><tbody>{doc.lines.map((line, i) => <tr key={i}><td>{line.description}{line.taxable && doc.tax_bps > 0 ? ' *' : ''}</td><td>{line.quantity}</td><td>{quoteMoney(line.unit_price_cents || 0)}</td><td>{quoteMoney(quoteLineTotal(line))}</td></tr>)}</tbody></table>
     <div className="q-document-totals"><div><span>Subtotal</span><strong>{quoteMoney(totals.subtotal_cents)}</strong></div>{totals.discount_cents > 0 && <div><span>Discount</span><strong>− {quoteMoney(totals.discount_cents)}</strong></div>}<div><span>Tax ({doc.tax_bps / 100}% on selected items)</span><strong>{quoteMoney(totals.tax_cents)}</strong></div><div className="q-document-grand"><span>TOTAL PROJECT COST</span><strong>{quoteMoney(totals.total_cents)}</strong></div>{doc.deposit_bps > 0 && <><div><span>Deposit requested ({doc.deposit_bps / 100}%)</span><strong>{quoteMoney(totals.deposit_cents)}</strong></div><div><span>Balance after deposit</span><strong>{quoteMoney(totals.remainder_cents)}</strong></div></>}</div>

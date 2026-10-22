@@ -7,3 +7,5 @@ Keep `inventoryPdfRuntime.js`, `inventoryPdfRuntime.d.ts`, `PDF-LIB-LICENSE.txt`
 The report uses an A4 landscape table, KES currency, Africa/Nairobi timestamps, repeated column headers and page numbers. Normal product rows stay on one page; very long rows continue on another page. Export follows the main Inventory product filter and search, across all stock locations. Stock value uses the products' listed unit prices.
 
 The development repository keeps the readable renderer in `scripts/inventory-pdf-entry.mjs` and its pinned bundler in `scripts/vendor-inventory-pdf.mjs`. Product data and export selection are prepared in `src/damany-addons/inventoryPdf.ts`.
+
+The same bundled PDF runtime also generates customer quotations using `quotationPdf.ts`. Client names, itemised costs, tax, deposit, validity and planning terms come from the selected quotation snapshot. No customer data is sent to a conversion service.

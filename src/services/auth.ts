@@ -1,4 +1,8 @@
 import type {AuthChangeEvent, Session, SupabaseClient} from '@supabase/supabase-js';
+import {getSessionActivity, IDLE_MESSAGE} from './sessionActivity';
+import type {SessionActivity} from './sessionActivity';
+
+const passwordLogins = new WeakSet<SupabaseClient>();
 
 export type AuthState = {
   session: Session | null;
@@ -24,6 +28,7 @@ export function readAuthRedirect(href: string) {
   return {
     recovery: !failed && (url.searchParams.get('auth') === 'recovery' || type === 'recovery' || type === 'invite'),
     error: failed ? 'This sign-in link is invalid or has expired. Request a new password reset link.' : '',
+    ...(!failed && (type === 'invite' || type === 'recovery' || url.searchParams.get('auth') === 'recovery') && (hash.has('access_token') || url.searchParams.has('code')) ? {fresh:true} : {}),
   };
 }
 
@@ -38,11 +43,29 @@ export function passwordProblem(password: string, confirmation: string) {
   return '';
 }
 
-export async function signIn(client: SupabaseClient, email: string, password: string) {
-  const result = await client.auth.signInWithPassword({email: email.trim(), password});
-  if (result.error) throw result.error;
-  if (!result.data.session) throw new Error('Sign-in did not complete. Please try again.');
-  return result.data.session;
+export async function signIn(client: SupabaseClient, email: string, password: string, activity = getSessionActivity()) {
+  passwordLogins.add(client);
+  try {
+    const result = await client.auth.signInWithPassword({email: email.trim(), password});
+    if (result.error) throw result.error;
+    if (!result.data.session) throw new Error('Sign-in did not complete. Please try again.');
+    activity?.start(result.data.session);
+    void client.auth.startAutoRefresh?.();
+    return result.data.session;
+  } finally {passwordLogins.delete(client);}
+}
+
+/** Lock the app first, even when the network cannot complete Supabase sign-out. */
+export async function endSession(client: SupabaseClient | null, activity: SessionActivity | undefined,
+  lock: () => void, clearStoredAuth: () => void) {
+  activity?.end(); lock();
+  try {
+    if (client) {
+      const {error} = await client.auth.signOut({scope:'local'});
+      if (error) await client.auth.stopAutoRefresh();
+    }
+  } catch {if (client) await client.auth.stopAutoRefresh().catch(() => {});}
+  finally {clearStoredAuth();}
 }
 
 export async function requestPasswordReset(client: SupabaseClient, email: string, origin: string) {
@@ -60,9 +83,10 @@ export async function changePassword(client: SupabaseClient, password: string, c
 /** Auth callbacks remain synchronous to avoid Supabase's auth-lock deadlocks. */
 export function observeAuth(
   client: SupabaseClient,
-  initial: {recovery: boolean; error: string},
+  initial: {recovery: boolean; error: string; fresh?: boolean},
   publish: (state: AuthState) => void,
   clearPrivateData: () => void,
+  activity?: SessionActivity,
 ) {
   let active = true;
   let revision = 0;
@@ -70,14 +94,24 @@ export function observeAuth(
   let previousUser: string | undefined;
   const emit = (session: Session | null, error = '') => {
     if (!active) return;
+    if (session && activity && !activity.remaining(session)) {error = activity.belongsTo(session) ? IDLE_MESSAGE : 'Please sign in again to continue.'; session = null;}
     if (!session || previousUser !== session.user.id) clearPrivateData();
     previousUser = session?.user.id;
     publish({session, loading: false, recovery: !!session && recovery, error});
   };
+  const stopActivity = activity?.subscribe(session => {
+    revision++;
+    emit(session || null);
+  });
   const {data: {subscription}} = client.auth.onAuthStateChange((event: AuthChangeEvent, session) => {
     if (!active || event === 'INITIAL_SESSION') return;
     revision++;
-    if (event === 'PASSWORD_RECOVERY') recovery = true;
+    // SIGNED_IN can also be sent on tab refocus; only the completed password request
+    // above establishes fresh activity. Never reset it on TOKEN_REFRESHED.
+    if (activity && event === 'SIGNED_IN' && passwordLogins.has(client)) return;
+    if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' && recovery && initial.fresh) {
+      recovery = true; initial.fresh = false; if (session) activity?.start(session);
+    }
     if (event === 'SIGNED_OUT') recovery = false;
     emit(session);
   });
@@ -86,14 +120,17 @@ export function observeAuth(
     if (error) throw error;
     if (!active || revision !== initialRevision) return;
     if (data.session) {
+      if (!initial.fresh && activity && !activity.remaining(data.session)) {emit(data.session); return;}
       // Verify restored sessions with Auth before mounting the private application.
       const checked = await client.auth.getUser();
       if (checked.error) throw checked.error;
       if (!checked.data.user || checked.data.user.id !== data.session.user.id) throw new Error('Your session has expired. Please sign in again.');
+      if (!active || revision !== initialRevision) return;
+      if (initial.fresh && recovery) {initial.fresh = false; activity?.start(data.session);}
     }
     if (active && revision === initialRevision) emit(data.session, initial.error);
   }).catch(error => {
     if (active && revision === initialRevision) emit(null, authMessage(error));
   });
-  return () => {active = false; subscription.unsubscribe();};
+  return () => {active = false; subscription.unsubscribe(); stopActivity?.();};
 }

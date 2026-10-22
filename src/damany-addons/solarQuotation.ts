@@ -12,10 +12,15 @@ export interface QuoteEquipment {
   battery_name: string; battery_kwh: number; battery_output_kw: number; battery_price: string; battery_count: number | null; battery_taxable: boolean;
 }
 export interface QuoteExtra {id: string; description: string; quantity: number; unit_price: string; taxable: boolean}
+export interface QuoteBrief {
+  scenario: string; site_type: string; rooms: number; people: number; site_notes: string;
+  goal: string; backup_hours: number; location: string; grid: string; timeline: string; budget: string;
+}
 export interface QuoteDraft {
   version: 1; issuer: QuoteContact; customer: QuoteContact; project_title: string; issued_on: string; valid_until: string;
   demand: QuoteDemand; assumptions: QuoteAssumptions; equipment: QuoteEquipment; extras: QuoteExtra[];
   discount: string; tax_percent: string; deposit_percent: string; terms: string;
+  brief?: QuoteBrief;
 }
 export interface QuoteSizing {peak_kw: number; daily_kwh: number; backup_kwh: number; backup_peak_kw: number; design_daily_kwh: number; minimum_solar_kw: number; minimum_inverter_kw: number; minimum_battery_kwh: number; suggested_panels: number; suggested_batteries: number}
 export interface QuoteLine {description: string; quantity: number; unit_price_cents: number | null; taxable: boolean}

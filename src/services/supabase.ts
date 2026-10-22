@@ -16,4 +16,9 @@ export function validateConnection(config:Connection){
  else if(!config.key.startsWith('sb_publishable_'))throw new Error('Use a Supabase publishable or legacy anon key.');
 }
 let cached:SupabaseClient|null=null;let fingerprint='';
+export function clearStoredAuth(){
+ const config=storedConnection();if(!config)return;
+ const key=`sb-${new URL(config.url).hostname.split('.')[0]}-auth-token`;
+ for(const suffix of ['', '-code-verifier', '-user']){try{localStorage.removeItem(key+suffix);}catch{/* The auth gate is already locked. */}}
+}
 export function supabase(){const config=storedConnection();if(!config)return null;const next=JSON.stringify(config);if(!cached||fingerprint!==next){validateConnection(config);cached=createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});fingerprint=next;}return cached;}
